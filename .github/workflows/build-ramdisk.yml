@@ -1,12 +1,12 @@
-name: Build iPhone 11 A13 Ramdisk
+name: Build iPhone XR A12 Ramdisk
 
 on:
   workflow_dispatch:
     inputs:
       ios_version:
-        description: 'iOS version or Build ID (e.g. 26.5.2 or 23F84)'
+        description: 'iOS version or Build ID (e.g. 26.5.2 or 18.7.10)'
         required: true
-        default: '23F84'
+        default: '18.7.10'
         type: string
       kernel:
         description: 'Kernel patch mode'
@@ -70,7 +70,7 @@ jobs:
             [[ -f "$f" ]] || { echo "MISS: $f" >&2; exit 1; }
             echo "OK: $f"
           done
-          for r in resources/IM4M_0x8030 resources/ssh.tar.gz resources/sshtarlist.txt; do
+          for r in resources/IM4M_0x8020 resources/ssh.tar.gz resources/sshtarlist.txt; do
             [[ -f "$r" ]] || { echo "MISS: $r" >&2; exit 1; }
             echo "OK: $r"
           done
@@ -141,13 +141,13 @@ jobs:
           #!/bin/bash
           if [[ "$1" == "-q" ]]; then
             cat << 'INNER'
-          PRODUCT: iPhone12,1
-          MODEL: N104AP
-          CPID: 0x8030
+          PRODUCT: iPhone11,8
+          MODEL: N841AP
+          CPID: 0x8020
           MODE: DFU
           PWND: usbliter8
           ECID: 0000000000000000
-          NAME: iPhone 11
+          NAME: iPhone XR
           INNER
           else
             echo "irecovery shim: unsupported args: $@" >&2
@@ -161,14 +161,14 @@ jobs:
       - name: Pre-build debug — inspect BuildManifest
         # Uses the ipsw CLI (parameterized by ios_version) instead of a hardcoded pzb
         # URL, so this debug step reflects whatever build was actually selected for
-        # this run instead of always showing the 23F84 / iOS 26.5.2 manifest.
+        # this run instead of always showing the 18.7.10 / iOS 26.5.2 manifest.
         run: |
           set +e
           source .venv/bin/activate
           mkdir -p /tmp/bm_debug
           cd /tmp/bm_debug
           echo "=== Downloading BuildManifest via ipsw CLI ==="
-          ipsw download ipsw --device iPhone12,1 --build "${{ github.event.inputs.ios_version }}" --build-manifest --output .
+          ipsw download ipsw --device iPhone11,8 --build "${{ github.event.inputs.ios_version }}" --build-manifest --output .
           if [[ -f BuildManifest.plist ]]; then
             python3 << 'PY'
           import plistlib
@@ -197,7 +197,7 @@ jobs:
           source .venv/bin/activate
           export PATH="$(pwd)/.venv/bin:$PATH"
 
-          ARGS="--build ${{ github.event.inputs.ios_version }}"
+          ARGS="--device iPhone11,8 --build ${{ github.event.inputs.ios_version }}"
           ARGS="$ARGS --kernel ${{ github.event.inputs.kernel }}"
           if [[ "${{ github.event.inputs.with_fw }}" == "true" ]]; then
             ARGS="$ARGS --with-fw"
@@ -206,7 +206,7 @@ jobs:
           fi
           
           echo "=== SELECTED BUILD IDENTITY ==="
-          echo "Device: iPhone 11 (iPhone12,1 / N104AP / 0x8030)"
+          echo "Device: iPhone XR (iPhone11,8 / N841AP / 0x8020)"
           echo "Build:  ${{ github.event.inputs.ios_version }}"
           echo "Kernel: ${{ github.event.inputs.kernel }}"
           echo "With-FW: ${{ github.event.inputs.with_fw }}"
@@ -239,11 +239,11 @@ jobs:
           cp -R "$BOOTCHAIN_DIR"/* artifact/bootchain/
           
           cat > artifact/BUILD-INFO.txt << EOF
-          Device: iPhone 11
-          ProductType: iPhone12,1
-          BoardConfig: N104AP
-          CPID: 0x8030
-          Chip: A13 / T8030
+          Device: iPhone XR
+          ProductType: iPhone11,8
+          BoardConfig: N841AP
+          CPID: 0x8020
+          Chip: A12 / T8020
           Build: ${{ github.event.inputs.ios_version }}
           Kernel: ${{ github.event.inputs.kernel }}
           With-FW: ${{ github.event.inputs.with_fw }}
@@ -255,19 +255,19 @@ jobs:
           
           echo "${{ github.sha }}" > artifact/source-commit.txt
           
-          tar -czf iphone11-a13-ramdisk.tar.gz -C artifact .
+          tar -czf iphonexr-a12-ramdisk.tar.gz -C artifact .
           
           echo "=== Final artifact ==="
           find artifact -type f
-          du -ah artifact iphone11-a13-ramdisk.tar.gz
+          du -ah artifact iphonexr-a12-ramdisk.tar.gz
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: iphone11-a13-ramdisk-${{ github.event.inputs.ios_version }}
+          name: iphonexr-a12-ramdisk-${{ github.event.inputs.ios_version }}
           path: |
             artifact/
-            iphone11-a13-ramdisk.tar.gz
+            iphonexr-a12-ramdisk.tar.gz
           if-no-files-found: error
 
       - name: Restore original files
